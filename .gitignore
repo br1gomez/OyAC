@@ -1,0 +1,4 @@
+#Ignorando archivos de IDEs
+.vscode/
+
+.micropico/
