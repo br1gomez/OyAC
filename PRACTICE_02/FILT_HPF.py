@@ -3,7 +3,7 @@
 
 from machine import Pin, ADC
 from array import array
-from time import sleep 
+from time import sleep, sleep_ms 
 import _thread
 
 # Configuración del Pin26 como entrada analógica ADC0
@@ -57,7 +57,7 @@ def Onda_Cuadrada():
 
 @micropython.asm_thumb
 def filtro(r0, r1, r2, r3):
-    # r0 -> Cte_UKs (b0, b1)
+# r0 -> Cte_UKs (b0, b1)
     # r1 -> UKs (U(k), U(k-1))
     # r2 -> Cte_YKs (a0, a1)
     # r3 -> YKs (Y(k), Y(k-1))
@@ -71,19 +71,20 @@ def filtro(r0, r1, r2, r3):
     # S4 = S4 + b1 * U(k-1)
     vldr(s0, [r0, 4])
     vldr(s1, [r1, 4])
-    vmla(s4, s0, s1)  # vmla = Multiply and Accumulate
+    vmul(s5, s0, s1)  # s5 = b1 * U(k-1) usando un registro temporal s5
+    vadd(s4, s4, s5)  # s4 = s4 + s5
     
     # S4 = S4 - a1 * Y(k-1)
-    # (vmls = Multiply and Subtract)
     vldr(s0, [r2, 4])
     vldr(s1, [r3, 4])
-    vmls(s4, s0, s1)
+    vmul(s5, s0, s1)  #s5 = a1 * Y(k-1) (reutilizamos s5)
+    vsub(s4, s4, s5)  #s4 = s4 - s5
     
     # Almacena el resultado final en Y(k)
     # YKs[0] = S4
     vstr(s4, [r3, 0])
     
-    # Actualización de las variables del filtro
+    # Actualiuzación de variables
     # U(k-1) = U(k)
     vldr(s0, [r1, 0])
     vstr(s0, [r1, 4])
